@@ -8,8 +8,8 @@ Supports
 This repo currently supports the following and I plan to implement the rest later on.
 
 - [x] Connect
-- [ ] UDP
 - [ ] Bind
+- [ ] UDP
 
 License
 -----------

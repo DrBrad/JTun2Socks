@@ -52,8 +52,8 @@ public class Proxy extends Thread {
             try{
                 NatSessionManager.NatSession session = NatSessionManager.getSession((short) socket.getPort());
                 if(session != null){
-                    //clientIn = socket.getInputStream();
-                    //clientOut = socket.getOutputStream();
+                    clientIn = socket.getInputStream();
+                    clientOut = socket.getOutputStream();
 
                     InetSocketAddress destination = new InetSocketAddress("192.168.0.7", 8080);
 
@@ -94,14 +94,7 @@ public class Proxy extends Thread {
                         byte reply = getReplyCommand();
 
                         if(reply == 0x00){
-                            new Thread(new Runnable(){
-                                @Override
-                                public void run(){
-                                    forwardData(server, socket);
-                                }
-                            }).start();
-
-                            forwardData(socket, server);
+                            relay();
                         }
                     }
 
@@ -145,35 +138,74 @@ public class Proxy extends Thread {
             return -1;
         }
 
-        public void forwardData(Socket inputSocket, Socket outputSocket){
-            try{
-                InputStream inputStream = inputSocket.getInputStream();
-                try{
-                    OutputStream outputStream = outputSocket.getOutputStream();
+        public void relay(){
+            Thread thread = new Thread(new Runnable(){
+                @Override
+                public void run(){
                     try{
-                        byte[] buffer = new byte[4096];//4096
-                        int read;
-                        do{
-                            read = inputStream.read(buffer);
-                            if(read > 0){
-                                outputStream.write(buffer, 0, read);
-                                if(inputStream.available() < 1){
-                                    outputStream.flush();
+                        while(!socket.isClosed() && !server.isClosed() && !socket.isInputShutdown() && !server.isOutputShutdown() && !isInterrupted()){
+                            byte[] buffer = new byte[4096];
+                            int length;
+
+                            try{
+                                length = clientIn.read(buffer);
+                            }catch(InterruptedIOException e){
+                                length = 0;
+                            }catch(IOException e){
+                                length = -1;
+                            }catch(Exception e){
+                                length = -1;
+                            }
+
+                            if(length < 0){
+                                socket.shutdownInput();
+                                server.shutdownOutput();
+                                break;
+                            }else if(length > 0){
+                                try{
+                                    serverOut.write(buffer, 0, length);
+                                    serverOut.flush();
+                                }catch(Exception e){
                                 }
                             }
-                        }while(read >= 0);
-                    }catch(Exception e){
-                    }finally{
-                        if(!outputSocket.isOutputShutdown()){
-                            outputSocket.shutdownOutput();
                         }
-                    }
-                }finally{
-                    if(!inputSocket.isInputShutdown()){
-                        inputSocket.shutdownInput();
+                    }catch(Exception e){
                     }
                 }
-            }catch(IOException e){
+            });
+
+            thread.start();
+
+            try{
+                byte[] buffer = new byte[4096];
+                int length;
+
+                while(!socket.isClosed() && !server.isClosed() && !server.isInputShutdown() && !socket.isOutputShutdown() && !thread.isInterrupted()){
+                    try{
+                        length = serverIn.read(buffer);
+                    }catch(InterruptedIOException e){
+                        length = 0;
+                    }catch(IOException e){
+                        length = -1;
+                    }catch(Exception e){
+                        length = -1;
+                    }
+
+                    if(length < 0){
+                        server.shutdownInput();
+                        socket.shutdownOutput();
+                        break;
+                    }else if(length > 0){
+                        try{
+                            clientOut.write(buffer, 0, length);
+                            clientOut.flush();
+                        }catch(Exception e){
+                        }
+                    }
+                }
+
+                thread.interrupt();
+            }catch(Exception e){
             }
         }
 

@@ -9,7 +9,7 @@ This repo currently supports the following and I plan to implement the rest late
 
 - [x] Connect
 - [x] Bind
-- [ ] UDP (Just forwarded past the VPN for now)
+- [ ] UDP (Just forwarded past the tunnel for now)
 
 How it works
 -----------

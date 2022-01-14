@@ -15,6 +15,8 @@ public class Proxy extends Thread {
 
     private VPNService service;
     public short port;
+    private InputStream clientIn;
+    private OutputStream clientOut;
 
     public Proxy(VPNService service, int port){
         this.service = service;
@@ -55,7 +57,7 @@ public class Proxy extends Thread {
                     clientIn = socket.getInputStream();
                     clientOut = socket.getOutputStream();
 
-                    InetSocketAddress destination = new InetSocketAddress("192.168.0.7", 8080);
+                    InetSocketAddress destination = new InetSocketAddress("192.168.0.7", 8080); //EDIT THIS WITH THE IP AND PORT OF THE PROXY
 
                     server = new Socket();
                     server.bind(new InetSocketAddress(0));

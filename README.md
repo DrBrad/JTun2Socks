@@ -2,6 +2,7 @@ JTun2Socks
 ===========
 
 This is a network layer socks client, that minilpulates packets to run them through a Socks5 server.
+For [VPN2Socket](https://github.com/DrBrad/Android-VPN-to-Socket)
 
 Supports
 -----------
